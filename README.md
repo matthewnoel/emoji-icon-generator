@@ -90,6 +90,13 @@ npx emoji-icon-generator 🔥 --bg "#1e293b" --theme-color "#f97316"
 Node.js ≥ 18. Rendering uses [`@napi-rs/canvas`](https://github.com/Brooooooklyn/canvas)
 (prebuilt binaries — nothing to install system-wide).
 
+## Releasing (maintainers)
+
+Every merge to `main` publishes to npm automatically (via trusted
+publishing). The patch version is bumped for you; to ship a minor or major
+release instead, set the new version in `package.json` in your PR. The
+workflow tags the release and syncs the version back to `main`.
+
 ## License
 
 [MIT](./LICENSE)

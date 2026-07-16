@@ -1,14 +1,25 @@
 name: Release
 
+# Every merge to main publishes to npm. The version is bumped automatically:
+# if package.json already carries a version newer than the registry (a
+# deliberate minor/major bump made in the PR), that version is published;
+# otherwise the latest published patch version is incremented. After
+# publishing, the run tags the release and syncs package.json back to main.
+# Versions must be plain x.y.z — prereleases aren't handled.
+
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       id-token: write
     steps:
       - uses: actions/checkout@v4
@@ -19,9 +30,36 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: npm ci
       - run: npm test
-      # Auth via npm Trusted Publishing (OIDC) — configure this repo +
-      # workflow as the trusted publisher in the package settings on
-      # npmjs.com. Requires npm >= 11.5.1; provenance is attested
-      # automatically.
+      # Auth via npm Trusted Publishing (OIDC), which needs npm >= 11.5.1.
       - run: npm install -g npm@latest
+      - name: Determine next version
+        id: next
+        run: |
+          latest=$(npm view emoji-icon-generator version)
+          next=$(node -e '
+            const cur = require("./package.json").version;
+            const latest = process.argv[1];
+            const parse = (v) => v.split(".").map(Number);
+            const c = parse(cur);
+            const l = parse(latest);
+            const curIsNewer =
+              c[0] !== l[0] ? c[0] > l[0] : c[1] !== l[1] ? c[1] > l[1] : c[2] > l[2];
+            if (curIsNewer) {
+              console.log(cur);
+            } else {
+              l[2]++;
+              console.log(l.join("."));
+            }
+          ' "$latest")
+          echo "published=$latest next=$next"
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+      - run: npm version "${{ steps.next.outputs.version }}" --no-git-tag-version --allow-same-version
       - run: npm publish --access public
+      - name: Tag release and sync version to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "v${{ steps.next.outputs.version }} [skip ci]" || echo "version already in sync"
+          git tag "v${{ steps.next.outputs.version }}"
+          git push origin HEAD:main --follow-tags
