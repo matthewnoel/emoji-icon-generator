@@ -62,4 +62,6 @@ jobs:
           git add package.json package-lock.json
           git commit -m "v${{ steps.next.outputs.version }} [skip ci]" || echo "version already in sync"
           git tag "v${{ steps.next.outputs.version }}"
-          git push origin HEAD:main --follow-tags
+          # Push the tag ref explicitly: --follow-tags only pushes annotated
+          # tags, silently skipping the lightweight tag created above.
+          git push origin HEAD:main "refs/tags/v${{ steps.next.outputs.version }}"
