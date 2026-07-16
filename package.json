@@ -1,6 +1,6 @@
 {
   "name": "emoji-icon-generator",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Generate a complete set of web icon assets (favicon, PWA icons, apple-touch-icon, webmanifest) from a single emoji, rendered with your machine's native emoji font.",
   "keywords": [
     "emoji",
