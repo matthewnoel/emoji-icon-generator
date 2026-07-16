@@ -1,0 +1,27 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm test
+      # Auth via npm Trusted Publishing (OIDC) — configure this repo +
+      # workflow as the trusted publisher in the package settings on
+      # npmjs.com. Requires npm >= 11.5.1; provenance is attested
+      # automatically.
+      - run: npm install -g npm@latest
+      - run: npm publish --access public
